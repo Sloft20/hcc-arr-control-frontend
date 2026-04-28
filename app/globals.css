@@ -1,0 +1,140 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Tema escuro (padrão) ─────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  --bg-base:       #0a0f1e;
+  --bg-surface:    #0d1426;
+  --bg-card:       #111827;
+  --bg-hover:      #1a2332;
+  --bg-border:     #1e2d4a;
+  --bg-input:      #0d1426;
+
+  /* TEXTOS — máximo contraste no escuro */
+  --text-primary:   #ffffff;
+  --text-secondary: #ffffff;
+  --text-muted:     #ffffff;
+  --text-hint:      #e2e8f0;
+
+  --blue-primary:  #1d4ed8;
+  --blue-light:    #60a5fa;
+  --blue-bg:       #0f2040;
+  --blue-border:   #1d4ed8;
+
+  --amber-primary: #f59e0b;
+  --amber-light:   #fbbf24;
+  --amber-bg:      #1c1200;
+  --amber-border:  #92400e;
+
+  --green-primary: #22c55e;
+  --green-light:   #4ade80;
+  --green-bg:      #001a0a;
+  --green-border:  #166534;
+
+  --red-primary:   #ef4444;
+  --red-light:     #f87171;
+  --red-bg:        #1a0000;
+  --red-border:    #991b1b;
+
+  --shadow-sm:     0 1px 3px rgba(0,0,0,.4);
+  --shadow-md:     0 4px 12px rgba(0,0,0,.5);
+}
+
+/* ── Tema claro ───────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg-base:       #f8fafc;
+  --bg-surface:    #ffffff;
+  --bg-card:       #ffffff;
+  --bg-hover:      #f1f5f9;
+  --bg-border:     #e2e8f0;
+  --bg-input:      #f8fafc;
+
+  /* TEXTOS — máximo contraste no claro */
+  --text-primary:   #000000;
+  --text-secondary: #000000;
+  --text-muted:     #000000;
+  --text-hint:      #1e293b;
+
+  --blue-primary:  #1d4ed8;
+  --blue-light:    #2563eb;
+  --blue-bg:       #dbeafe;
+  --blue-border:   #bfdbfe;
+
+  --amber-primary: #d97706;
+  --amber-light:   #b45309;
+  --amber-bg:      #fffbeb;
+  --amber-border:  #fde68a;
+
+  --green-primary: #16a34a;
+  --green-light:   #15803d;
+  --green-bg:      #f0fdf4;
+  --green-border:  #bbf7d0;
+
+  --red-primary:   #dc2626;
+  --red-light:     #b91c1c;
+  --red-bg:        #fef2f2;
+  --red-border:    #fecaca;
+
+  --shadow-sm:     0 1px 3px rgba(0,0,0,.08);
+  --shadow-md:     0 4px 12px rgba(0,0,0,.1);
+}
+
+/* ── Reset ────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-sans), ui-sans-serif, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color .2s, color .2s;
+}
+
+body { overflow: hidden; }
+
+/* ── Scrollbar ────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg-surface); }
+::-webkit-scrollbar-thumb { background: var(--bg-border); border-radius: 9999px; }
+
+/* ── Seleção ──────────────────────────────────────────────── */
+::selection { background: var(--blue-bg); color: var(--blue-light); }
+
+/* ── Font mono ────────────────────────────────────────────── */
+.font-mono { font-family: var(--font-mono), ui-monospace, monospace !important; }
+
+/* ── Marca d'água ─────────────────────────────────────────── */
+.watermark {
+  position: fixed;
+  bottom: 40px;
+  right: 20px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: var(--text-hint);
+  opacity: 0.5;
+  pointer-events: none;
+  user-select: none;
+  z-index: 9999;
+  text-align: right;
+  line-height: 1.6;
+}
+
+.watermark-diagonal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-35deg);
+  font-size: 52px;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--text-primary);
+  opacity: 0.03;
+  pointer-events: none;
+  user-select: none;
+  z-index: 9998;
+  white-space: nowrap;
+  letter-spacing: 4px;
+}
