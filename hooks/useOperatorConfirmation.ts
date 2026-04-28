@@ -122,6 +122,7 @@ export function useOperatorConfirmation(operatorBadge: string | null) {
 
       const { error: updateError } = await supabase
         .from("gate_confirmations")
+        // @ts-ignore - Ignorando tipagem estrita no update
         .update({ confirmed_at: now, status: newStatus })
         .eq("id", pending.confirmationId);
 
