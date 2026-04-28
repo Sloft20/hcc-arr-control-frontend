@@ -55,7 +55,8 @@ export function useOperatorConfirmation(operatorBadge: string | null) {
       const { data: conf } = await supabase
         .from("gate_confirmations")
         .select("id, touchdown_at, deadline_seconds, confirmed_at, status")
-        .eq("schedule_id", schedule.id)
+        // @ts-ignore
+        .eq("schedule_id", (schedule as any).id)
         .eq("status", "pending")
         .maybeSingle();
 
