@@ -54,6 +54,7 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
       // Upsert na daily_schedules
       const { data: scheduleData, error: schedErr } = await supabase
         .from("daily_schedules")
+        // @ts-ignore
         .upsert({
           operator_id: selected,
           flight_id: flightId,
