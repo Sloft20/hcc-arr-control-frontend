@@ -44,7 +44,8 @@ export function useOperatorConfirmation(operatorBadge: string | null) {
       const { data: schedule } = await supabase
         .from("daily_schedules")
         .select("id, flight_id")
-        .eq("operator_id", op.id)
+        // @ts-ignore
+        .eq("operator_id", (op as any).id)
         .eq("operation_date", today)
         .maybeSingle();
 
