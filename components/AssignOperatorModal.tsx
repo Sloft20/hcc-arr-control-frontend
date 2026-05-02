@@ -47,8 +47,11 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
     setError("");
 
     try {
-      // 1. Atualizar portão no voo
-      await supabase.from("flights").update({ gate: gateValue.trim().toUpperCase() } as any).eq("id", flightId);
+      // 1. Atualizar portão via RPC (contorna tipo strict do Supabase JS v2)
+      await supabase.rpc("update_flight_gate", {
+        p_flight_id: flightId,
+        p_gate: gateValue.trim().toUpperCase(),
+      });
 
       // 2. Upsert daily_schedule
       const { data: scheduleData, error: schedErr } = await supabase
