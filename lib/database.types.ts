@@ -1,12 +1,9 @@
 // ============================================================
 //  lib/database.types.ts — Tipos TypeScript do schema Supabase
-//  Mapeamento fiel das tabelas e ENUMs definidos no schema SQL
 // ============================================================
 
 export type FlightStatus = "scheduled" | "landed" | "completed";
 export type ConfirmationStatus = "pending" | "confirmed_in_time" | "missed_deadline";
-
-// ── Tabelas brutas do banco ───────────────────────────────────────────────────
 
 export interface DbOperator {
   id: string;
@@ -50,9 +47,6 @@ export interface DbGateConfirmation {
   updated_at: string;
 }
 
-// ── Tipo composto para o Dashboard ───────────────────────────────────────────
-// Query com JOINs: flight → daily_schedule → operator → gate_confirmation
-
 export interface DashboardRow {
   flightId: string;
   flightCode: string;
@@ -71,15 +65,42 @@ export interface DashboardRow {
   confirmationStatus: ConfirmationStatus | null;
 }
 
-// ── Tipo para o banco (necessário pelo createClient<Database>) ────────────────
+export interface FlightUpdate {
+  gate?: string;
+  status?: FlightStatus;
+  landed_at?: string | null;
+  updated_at?: string;
+}
+
+export interface GateConfirmationUpdate {
+  confirmed_at?: string | null;
+  status?: ConfirmationStatus;
+  updated_at?: string;
+}
 
 export interface Database {
   public: {
     Tables: {
-      flights: { Row: DbFlight; Insert: Partial<DbFlight>; Update: Partial<DbFlight> };
-      operators: { Row: DbOperator; Insert: Partial<DbOperator>; Update: Partial<DbOperator> };
-      daily_schedules: { Row: DbDailySchedule; Insert: Partial<DbDailySchedule>; Update: Partial<DbDailySchedule> };
-      gate_confirmations: { Row: DbGateConfirmation; Insert: Partial<DbGateConfirmation>; Update: Partial<DbGateConfirmation> };
+      flights: {
+        Row: DbFlight;
+        Insert: Partial<DbFlight>;
+        Update: FlightUpdate;
+      };
+      operators: {
+        Row: DbOperator;
+        Insert: Partial<DbOperator>;
+        Update: Partial<DbOperator>;
+      };
+      daily_schedules: {
+        Row: DbDailySchedule;
+        Insert: Partial<DbDailySchedule>;
+        Update: Partial<DbDailySchedule>;
+      };
+      gate_confirmations: {
+        Row: DbGateConfirmation;
+        Insert: Partial<DbGateConfirmation>;
+        Update: GateConfirmationUpdate;
+      };
     };
   };
 }

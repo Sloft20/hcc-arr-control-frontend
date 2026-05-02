@@ -56,7 +56,7 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
       // 1. Atualizar portão no voo
       const { error: gateErr } = await supabase
         .from("flights")
-        .update({ gate: gateValue.trim().toUpperCase() } as any)
+        .update({ gate: gateValue.trim().toUpperCase() })
         .eq("id", flightId);
       if (gateErr) throw gateErr;
 
@@ -68,7 +68,7 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
           flight_id:      flightId,
           operation_date: today,
           notes: "Atribuído manualmente pelo controlador",
-        } as any, { onConflict: "operator_id,flight_id,operation_date" })
+        }, { onConflict: "operator_id,flight_id,operation_date" })
         .select("id")
         .single();
       if (schedErr) throw schedErr;
