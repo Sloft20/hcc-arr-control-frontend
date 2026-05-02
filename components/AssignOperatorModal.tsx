@@ -7,7 +7,13 @@
 // ============================================================
 
 import { useState, useEffect } from "react";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@db/db-js";
+
+// Cliente sem tipagem genérica para operações de update neste modal
+const db = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
 
 interface Operator {
   id: string;
@@ -34,7 +40,7 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
-    supabase
+    db
       .from("operators")
       .select("id, name, badge_id")
       .eq("active", true)
@@ -54,14 +60,14 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
 
     try {
       // 1. Atualizar portão no voo
-      const { error: gateErr } = await supabase
+      const { error: gateErr } = await db
         .from("flights")
         .update({ gate: gateValue.trim().toUpperCase() })
         .eq("id", flightId);
       if (gateErr) throw gateErr;
 
       // 2. Upsert daily_schedule
-      const { data: scheduleData, error: schedErr } = await supabase
+      const { data: scheduleData, error: schedErr } = await db
         .from("daily_schedules")
         .upsert({
           operator_id:    selected,
@@ -74,21 +80,21 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
       if (schedErr) throw schedErr;
 
       // 3. Se o voo já está landed, criar gate_confirmation
-      const { data: flightData } = await supabase
+      const { data: flightData } = await db
         .from("flights")
         .select("status, landed_at")
         .eq("id", flightId)
         .single();
 
       if (flightData?.status === "landed" && flightData?.landed_at) {
-        const { data: existing } = await supabase
+        const { data: existing } = await db
           .from("gate_confirmations")
           .select("id")
           .eq("schedule_id", scheduleData.id)
           .limit(1);
 
         if (!existing?.length) {
-          const { error: confErr } = await supabase
+          const { error: confErr } = await db
             .from("gate_confirmations")
             .insert({
               schedule_id:      scheduleData.id,
