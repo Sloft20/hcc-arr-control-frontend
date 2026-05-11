@@ -13,7 +13,7 @@ interface Props {
   flightId: string;
   flightCode: string;
   gate: string;
-  currentOperatorId?: string;  // se passado, modo "trocar"
+  currentOperatorId?: string;
   onClose: () => void;
   onAssigned: () => void;
 }
@@ -49,26 +49,54 @@ export function AssignOperatorModal({ flightId, flightCode, gate, currentOperato
     setError("");
 
     try {
-      // 1. Atualizar portão via RPC (contorna tipo strict do Supabase JS v2)
+      // 1. Atualizar portão via RPC
       await supabase.rpc("update_flight_gate", {
         p_flight_id: flightId,
         p_gate: gateValue.trim().toUpperCase(),
       });
 
-      // 2. Upsert daily_schedule
+      // 2. Se está trocando operador, deletar escala e confirmação antigas
+      if (isTrocar) {
+        // Buscar escala existente para este voo hoje
+        const { data: oldSchedules } = await supabase
+          .from("daily_schedules")
+          .select("id")
+          .eq("flight_id", flightId)
+          .eq("operation_date", today);
+
+        if (oldSchedules?.length) {
+          const oldIds = oldSchedules.map(s => s.id);
+
+          // Deletar gate_confirmations das escalas antigas
+          await supabase
+            .from("gate_confirmations")
+            .delete()
+            .in("schedule_id", oldIds);
+
+          // Deletar escalas antigas
+          await supabase
+            .from("daily_schedules")
+            .delete()
+            .in("id", oldIds);
+        }
+      }
+
+      // 3. Inserir nova escala
       const { data: scheduleData, error: schedErr } = await supabase
         .from("daily_schedules")
-        .upsert({
+        .insert({
           operator_id:    selected,
           flight_id:      flightId,
           operation_date: today,
-          notes:          "Atribuído manualmente pelo controlador",
-        } as any, { onConflict: "operator_id,flight_id,operation_date" })
+          notes: isTrocar
+            ? "Operador trocado pelo controlador"
+            : "Atribuído manualmente pelo controlador",
+        } as any)
         .select("id")
         .single();
       if (schedErr) throw schedErr;
 
-      // 3. Se o voo já está landed, criar gate_confirmation
+      // 4. Se o voo já está landed, criar nova gate_confirmation
       const { data: flightData } = await supabase
         .from("flights")
         .select("status, landed_at")
@@ -76,20 +104,12 @@ export function AssignOperatorModal({ flightId, flightCode, gate, currentOperato
         .single();
 
       if (flightData?.status === "landed" && flightData?.landed_at) {
-        const { data: existing } = await supabase
-          .from("gate_confirmations")
-          .select("id")
-          .eq("schedule_id", scheduleData.id)
-          .limit(1);
-
-        if (!existing?.length) {
-          await supabase.from("gate_confirmations").insert({
-            schedule_id:      scheduleData.id,
-            touchdown_at:     flightData.landed_at,
-            status:           "pending",
-            deadline_seconds: 180,
-          } as any);
-        }
+        await supabase.from("gate_confirmations").insert({
+          schedule_id:      scheduleData.id,
+          touchdown_at:     flightData.landed_at,
+          status:           "pending",
+          deadline_seconds: 180,
+        } as any);
       }
 
       onAssigned();
@@ -115,7 +135,10 @@ export function AssignOperatorModal({ flightId, flightCode, gate, currentOperato
             <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
               {isTrocar ? "Trocar Operador" : "Atribuir Operador"}
             </h3>
-            <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Voo <strong>{flightCode}</strong></p>
+            <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
+              Voo <strong>{flightCode}</strong>
+              {isTrocar && <span style={{ color: "var(--amber-light)", marginLeft: "6px" }}>· escala anterior será removida</span>}
+            </p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "20px", lineHeight: 1 }}>✕</button>
         </div>
@@ -137,7 +160,9 @@ export function AssignOperatorModal({ flightId, flightCode, gate, currentOperato
 
         {/* Operadores */}
         <div style={{ padding: "14px 20px 0", display: "flex", flexDirection: "column", gap: "6px", maxHeight: "260px", overflowY: "auto" }}>
-          <p style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: "6px", fontWeight: 600 }}>Selecione o operador</p>
+          <p style={{ fontSize: "11px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: "6px", fontWeight: 600 }}>
+            {isTrocar ? "Selecione o novo operador" : "Selecione o operador"}
+          </p>
           {loading ? (
             <div style={{ display: "flex", justifyContent: "center", padding: "20px" }}>
               <div style={{ width: "24px", height: "24px", border: "2px solid var(--bg-border)", borderTopColor: "var(--blue-primary)", borderRadius: "50%", animation: "spin 1s linear infinite" }} />
@@ -165,11 +190,16 @@ export function AssignOperatorModal({ flightId, flightCode, gate, currentOperato
         )}
 
         <div style={{ padding: "16px 20px", borderTop: "1px solid var(--bg-border)", marginTop: "14px", display: "flex", gap: "10px" }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "11px", border: "1px solid var(--bg-border)", background: "var(--bg-card)", color: "var(--text-secondary)", borderRadius: "10px", fontSize: "13px", cursor: "pointer" }}>Cancelar</button>
+          <button onClick={onClose} style={{ flex: 1, padding: "11px", border: "1px solid var(--bg-border)", background: "var(--bg-card)", color: "var(--text-secondary)", borderRadius: "10px", fontSize: "13px", cursor: "pointer" }}>
+            Cancelar
+          </button>
           <button onClick={handleAssign} disabled={!selected || !gateValue.trim() || saving}
             style={{ flex: 2, padding: "11px", background: selected && gateValue.trim() ? "var(--blue-primary)" : "var(--bg-card)", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: 700, color: selected && gateValue.trim() ? "white" : "var(--text-hint)", cursor: selected && gateValue.trim() && !saving ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
           >
-            {saving ? <><div style={{ width: "14px", height: "14px", border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />Atribuindo...</> : isTrocar ? "✓ Confirmar Troca" : "✓ Confirmar Atribuição"}
+            {saving
+              ? <><div style={{ width: "14px", height: "14px", border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />Salvando...</>
+              : isTrocar ? "✓ Confirmar Troca" : "✓ Confirmar Atribuição"
+            }
           </button>
         </div>
       </div>
