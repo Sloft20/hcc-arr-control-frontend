@@ -13,11 +13,13 @@ interface Props {
   flightId: string;
   flightCode: string;
   gate: string;
+  currentOperatorId?: string;  // se passado, modo "trocar"
   onClose: () => void;
   onAssigned: () => void;
 }
 
-export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAssigned }: Props) {
+export function AssignOperatorModal({ flightId, flightCode, gate, currentOperatorId, onClose, onAssigned }: Props) {
+  const isTrocar = !!currentOperatorId;
   const [operators, setOperators] = useState<Operator[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [gateValue, setGateValue] = useState(gate === "—" ? "" : gate);
@@ -110,7 +112,9 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
       >
         <div style={{ padding: "18px 20px", borderBottom: "1px solid var(--bg-border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>Atribuir Operador</h3>
+            <h3 style={{ fontSize: "15px", fontWeight: 700, color: "var(--text-primary)" }}>
+              {isTrocar ? "Trocar Operador" : "Atribuir Operador"}
+            </h3>
             <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>Voo <strong>{flightCode}</strong></p>
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)", fontSize: "20px", lineHeight: 1 }}>✕</button>
@@ -165,7 +169,7 @@ export function AssignOperatorModal({ flightId, flightCode, gate, onClose, onAss
           <button onClick={handleAssign} disabled={!selected || !gateValue.trim() || saving}
             style={{ flex: 2, padding: "11px", background: selected && gateValue.trim() ? "var(--blue-primary)" : "var(--bg-card)", border: "none", borderRadius: "10px", fontSize: "13px", fontWeight: 700, color: selected && gateValue.trim() ? "white" : "var(--text-hint)", cursor: selected && gateValue.trim() && !saving ? "pointer" : "not-allowed", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
           >
-            {saving ? <><div style={{ width: "14px", height: "14px", border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />Atribuindo...</> : "✓ Confirmar Atribuição"}
+            {saving ? <><div style={{ width: "14px", height: "14px", border: "2px solid white", borderTopColor: "transparent", borderRadius: "50%", animation: "spin 1s linear infinite" }} />Atribuindo...</> : isTrocar ? "✓ Confirmar Troca" : "✓ Confirmar Atribuição"}
           </button>
         </div>
       </div>
