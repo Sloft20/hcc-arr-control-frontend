@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useOperatorConfirmation } from "@/hooks/useOperatorConfirmation";
+import { usePushNotification } from "@/hooks/usePushNotification";
 import { useCountdown } from "@/hooks/useCountdown";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
@@ -16,7 +17,7 @@ function initials(name: string) {
 }
 
 // ── Tela de Login com PIN ─────────────────────────────────────
-function LoginScreen({ onLogin }: { onLogin: (badge: string, name: string) => void }) {
+function LoginScreen({ onLogin }: { onLogin: (badge: string, name: string, id: string) => void }) {
   const [badge, setBadge] = useState("");
   const [pin, setPin] = useState(["", "", "", ""]);
   const [step, setStep] = useState<"badge" | "pin">("badge");
@@ -62,7 +63,8 @@ function LoginScreen({ onLogin }: { onLogin: (badge: string, name: string) => vo
         throw new Error(data.detail ?? "Erro ao autenticar");
       }
       const data = await resp.json();
-      onLogin(data.badge_id, data.name);
+      // Extraindo o operator_id retornado na resposta da API
+      onLogin(data.badge_id, data.name, data.operator_id);
     } catch (e: any) {
       setError(e.message ?? "Matrícula ou PIN incorretos");
       setPin(["", "", "", ""]);
@@ -203,8 +205,9 @@ function CountdownRing({ touchdownAt, deadlineSeconds }: { touchdownAt: string; 
 }
 
 // ── Tela principal do Operador ────────────────────────────────
-function OperatorScreen({ badge, name, onLogout }: { badge: string; name: string; onLogout: () => void }) {
+function OperatorScreen({ badge, name, operatorId, onLogout }: { badge: string; name: string; operatorId: string; onLogout: () => void }) {
   const { pending, loading, confirming, lastResult, error, confirm, refetch, reset } = useOperatorConfirmation(badge);
+  const { status: pushStatus } = usePushNotification(operatorId ?? null);
 
   useEffect(() => {
     if (pending && "vibrate" in navigator) navigator.vibrate([200, 100, 200]);
@@ -342,17 +345,16 @@ function OperatorScreen({ badge, name, onLogout }: { badge: string; name: string
 
 // ── Export ────────────────────────────────────────────────────
 export default function OperadorPage() {
-  const [auth, setAuth] = useState<{ badge: string; name: string } | null>(null);
+  const [auth, setAuth] = useState<{ badge: string; name: string; id: string } | null>(null);
 
   useEffect(() => {
     const saved = sessionStorage.getItem("operator_auth");
     if (saved) { try { setAuth(JSON.parse(saved)); } catch {} }
   }, []);
 
-  const handleLogin = (badge: string, name: string) => {
-    const data = { badge, name };
-    sessionStorage.setItem("operator_auth", JSON.stringify(data));
-    setAuth(data);
+  const handleLogin = (badge: string, name: string, id: string) => {
+    sessionStorage.setItem("operator_auth", JSON.stringify({ badge, name, id }));
+    setAuth({ badge, name, id });
   };
 
   const handleLogout = () => {
@@ -361,5 +363,5 @@ export default function OperadorPage() {
   };
 
   if (!auth) return <LoginScreen onLogin={handleLogin} />;
-  return <OperatorScreen badge={auth.badge} name={auth.name} onLogout={handleLogout} />;
+  return <OperatorScreen badge={auth.badge} name={auth.name} operatorId={auth.id} onLogout={handleLogout} />;
 }
