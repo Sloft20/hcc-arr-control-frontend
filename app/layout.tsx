@@ -10,7 +10,8 @@ const dmSans = DM_Sans({ subsets: ["latin"], variable: "--font-sans", display: "
 
 export const metadata: Metadata = {
   title: "HCC Arr Control",
-  description: "Sistema de operações aeroportuárias em tempo real",
+  description: "Controle de SLAs",
+  manifest: "/manifest.json", // Adicione esta linha!
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

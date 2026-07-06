@@ -32,7 +32,8 @@ export function ControllerAuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     try {
-      const saved = sessionStorage.getItem("controller_auth");
+      // 1. Mudamos de sessionStorage para localStorage aqui
+      const saved = localStorage.getItem("controller_auth");
       if (saved) {
         const { name } = JSON.parse(saved);
         setControllerName(name);
@@ -44,14 +45,18 @@ export function ControllerAuthProvider({ children }: { children: ReactNode }) {
   const login = async (name: string, pin: string): Promise<boolean> => {
     if (!name.trim() || pin !== CONTROLLER_PIN) return false;
     const data = { name: name.trim() };
-    sessionStorage.setItem("controller_auth", JSON.stringify(data));
+    
+    // 2. Mudamos de sessionStorage para localStorage aqui
+    localStorage.setItem("controller_auth", JSON.stringify(data));
+    
     setControllerName(name.trim());
     setIsAuthenticated(true);
     return true;
   };
 
   const logout = () => {
-    sessionStorage.removeItem("controller_auth");
+    // 3. Mudamos de sessionStorage para localStorage aqui
+    localStorage.removeItem("controller_auth");
     setIsAuthenticated(false);
     setControllerName("");
   };
