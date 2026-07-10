@@ -206,7 +206,8 @@ function CountdownRing({ touchdownAt, deadlineSeconds }: { touchdownAt: string; 
 
 // ── Tela principal do Operador ────────────────────────────────
 function OperatorScreen({ badge, name, operatorId, onLogout }: { badge: string; name: string; operatorId: string; onLogout: () => void }) {
-  const { pending, loading, confirming, lastResult, error, confirm, refetch, reset } = useOperatorConfirmation(badge);
+  // ATENÇÃO: Adicionamos o "upcomingFlights" na desestruturação abaixo
+  const { pending, upcomingFlights, loading, confirming, lastResult, error, confirm, refetch, reset } = useOperatorConfirmation(badge);
   const { status: pushStatus } = usePushNotification(operatorId ?? null);
 
   useEffect(() => {
@@ -242,7 +243,7 @@ function OperatorScreen({ badge, name, operatorId, onLogout }: { badge: string; 
         <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px" }}>Confirmação registrada fora do prazo</p>
       </div>
       <button onClick={reset} style={{ marginTop: "8px", padding: "14px 32px", background: "var(--blue-primary)", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, color: "white", cursor: "pointer" }}>
-        ↺ Voltar para Aguardando
+        ↺ Voltar para Radar
       </button>
     </div>
   );
@@ -284,18 +285,42 @@ function OperatorScreen({ badge, name, operatorId, onLogout }: { badge: string; 
       </div>
 
       {!pending ? (
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "16px", padding: "32px" }}>
-          <div style={{ width: "80px", height: "80px", borderRadius: "50%", border: "2px solid var(--bg-border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "var(--bg-border)", animation: "pulse 2s infinite" }} />
+        // ── AQUI ENTRA A LISTA DO RADAR ──────────────────────
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: "16px", padding: "24px 20px" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "8px" }}>
+            <h2 style={{ fontSize: "16px", fontWeight: 700, color: "var(--text-primary)" }}>Sua Escala Hoje</h2>
+            <button onClick={refetch} style={{ padding: "6px 12px", border: "1px solid var(--bg-border)", background: "var(--bg-card)", color: "var(--text-secondary)", borderRadius: "8px", fontSize: "12px", cursor: "pointer", display: "flex", gap: "6px", alignItems: "center" }}>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2v6h-6"/><path d="M3 12a9 9 0 1 0 2.1-5.7L21 8"/></svg>
+              Atualizar
+            </button>
           </div>
-          <div style={{ textAlign: "center" }}>
-            <p style={{ fontSize: "17px", fontWeight: 600, color: "var(--text-primary)" }}>Aguardando pouso</p>
-            <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "6px", maxWidth: "260px" }}>Você será notificado assim que uma aeronave tocar o solo</p>
-          </div>
-          {error && <p style={{ fontSize: "12px", color: "var(--red-light)", textAlign: "center" }}>{error}</p>}
-          <button onClick={refetch} style={{ marginTop: "8px", padding: "10px 20px", border: "1px solid var(--bg-border)", background: "var(--bg-card)", color: "var(--text-secondary)", borderRadius: "10px", fontSize: "12px", cursor: "pointer" }}>↺ Atualizar</button>
+
+          {upcomingFlights.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 20px", background: "var(--bg-card)", border: "1px dashed var(--bg-border)", borderRadius: "16px" }}>
+              <div style={{ width: "48px", height: "48px", background: "var(--bg-base)", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px", fontSize: "20px" }}>☕</div>
+              <p style={{ fontSize: "15px", fontWeight: 600, color: "var(--text-primary)" }}>Nenhum voo na fila</p>
+              <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>Sua escala está limpa por enquanto.</p>
+            </div>
+          ) : (
+            upcomingFlights.map(voo => (
+              <div key={voo.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: "var(--bg-card)", border: "1px solid var(--bg-border)", borderRadius: "16px", boxShadow: "0 4px 12px rgba(0,0,0,0.05)" }}>
+                <div>
+                  <div style={{ fontSize: "20px", fontWeight: 800, color: "var(--text-primary)", fontFamily: "var(--font-mono)" }}>{voo.flightCode}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginTop: "6px" }}>
+                    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: voo.status === "scheduled" ? "var(--blue-primary)" : "var(--amber-primary)" }} />
+                    <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>Previsto: {new Date(voo.scheduledAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: "10px", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "1px", marginBottom: "2px" }}>Portão</div>
+                  <div style={{ fontSize: "24px", fontWeight: 800, color: "var(--blue-light)", fontFamily: "var(--font-mono)", lineHeight: 1 }}>{voo.gate}</div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       ) : (
+        // ── AQUI CONTINUA O ALERTA CRÍTICO DE CONFIRMAÇÃO (INVISÍVEL ATÉ O POUSO) ──
         <>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", borderBottom: "1px solid var(--bg-border)" }}>
             <div style={{ padding: "16px 20px", borderRight: "1px solid var(--bg-border)" }}>
